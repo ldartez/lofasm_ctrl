@@ -55,21 +55,26 @@ try:
         print 'ERROR connecting to server %s on port %i.\n'%(roach,katcp_port)
         exit_fail()
 
-
+    sys.stdout.flush()
     print '------------------------'
     print 'Programming FPGA: %s...'%boffile,
     fpga.progdev(boffile)
     print 'done'
+    sys.stdout.flush()
     time.sleep(2)
 
     
     print 'Configuring fft_shift...',
     fpga.write_int('fft_shift',(2**32)-1)
     print 'done'
+    sys.stdout.flush()
+    time.sleep(2)
 
     print 'Configuring accumulation period...',
     fpga.write_int('acc_len', acc_len)
     print 'done'
+    sys.stdout.flush()
+    time.sleep(2)
 
     print 'Resetting board, software triggering and resetting error counters...',
     fpga.write_int('ctrl',0) 
@@ -79,6 +84,8 @@ try:
     fpga.write_int('ctrl',0) 
     fpga.write_int('ctrl',1<<18) #issue a second trigger
     print 'done'
+    sys.stdout.flush()
+    time.sleep(2)
 
     #EQ SCALING!
     # writes only occur when the addr line changes value. 
@@ -92,6 +99,8 @@ try:
         for input in range(4):
             fpga.blindwrite('quant%i_addr'%input,struct.pack('>I',chan))
     print 'done'
+    sys.stdout.flush()
+    time.sleep(2)
 
     #config for 10GbE interface
     FABRIC_IP = '192.168.4.33'

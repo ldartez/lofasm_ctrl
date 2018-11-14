@@ -77,11 +77,16 @@ try:
     time.sleep(2)
 
     print 'Resetting board, software triggering and resetting error counters...',
-    fpga.write_int('ctrl',0) 
+    fpga.write_int('ctrl',0)
+    time.sleep(.5)
     fpga.write_int('ctrl',1<<17) #arm
-    fpga.write_int('ctrl',0) 
+    time.sleep(.5)
+    fpga.write_int('ctrl',0)
+    time.sleep(.5)
     fpga.write_int('ctrl',1<<18) #software trigger
-    fpga.write_int('ctrl',0) 
+    time.sleep(.5)
+    fpga.write_int('ctrl',0)
+    time.sleep(.5)
     fpga.write_int('ctrl',1<<18) #issue a second trigger
     print 'done'
     sys.stdout.flush()

@@ -14,7 +14,7 @@ def ipStr2Bin(ip):
 
 ######################
 def exit_fail():
-    print 'FAILURE DETECTED. Log entries:\n'
+    print 'FAILURE DETECTED.\n'
     try:
         fpga.stop()
     except: pass
@@ -95,7 +95,7 @@ try:
     #EQ SCALING!
     # writes only occur when the addr line changes value. 
     # write blindly - don't bother checking if write was successful. Trust in TCP!
-    print 'Setting gains of all channels on all inputs to %i...'%opts.gain,
+    print 'Setting gains of all channels on all inputs to %i...'%gain,
     fpga.write_int('quant0_gain',gain) #write the same gain for all inputs, all channels
     fpga.write_int('quant1_gain',gain) #write the same gain for all inputs, all channels
     fpga.write_int('quant2_gain',gain) #write the same gain for all inputs, all channels

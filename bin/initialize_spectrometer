@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import corr,time,struct,sys,logging
+import corr,time,struct,sys
 
 katcp_port=7147
 ######################
@@ -14,7 +14,7 @@ def ipStr2Bin(ip):
 
 ######################
 def exit_fail():
-    print 'FAILURE DETECTED. Log entries:\n',lh.printMessages()
+    print 'FAILURE DETECTED. Log entries:\n'
     try:
         fpga.stop()
     except: pass
@@ -89,7 +89,6 @@ try:
     fpga.write_int('quant2_gain',gain) #write the same gain for all inputs, all channels
     fpga.write_int('quant3_gain',gain) #write the same gain for all inputs, all channels
     for chan in range(1024):
-        sys.stdout.flush()
         for input in range(4):
             fpga.blindwrite('quant%i_addr'%input,struct.pack('>I',chan))
     print 'done'

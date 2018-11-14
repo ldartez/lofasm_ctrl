@@ -41,8 +41,8 @@ if __name__ == '__main__':
 
     roach = cfg['roach_ip']
     boffile = cfg['bofname']
-    acc_len = cfg['acc_len']
-    gain = cfg['gain']
+    acc_len = int(cfg['acc_len'])
+    gain = int(cfg['gain'])
     ten_gbe_dest_ip = cfg['ten_gbe_dest_ip']
 try:
     print('Connecting to server %s on port %i... '%(roach, katcp_port)),

@@ -1,0 +1,138 @@
+#!/usr/bin/python
+
+import corr,time,struct,sys,logging
+
+katcp_port=7147
+######################
+def ipStr2Bin(ip):
+    ip = ip.split('.')
+    ip.reverse()
+    dest_ip = 0
+    for i in range(len(ip)):
+        dest_ip += 2**(i*8) * int(ip[i])
+    return dest_ip
+
+######################
+def exit_fail():
+    print 'FAILURE DETECTED. Log entries:\n',lh.printMessages()
+    try:
+        fpga.stop()
+    except: pass
+    exit()
+
+def exit_clean():
+    try:
+        fpga.stop()
+    except: pass
+    exit()
+
+
+if __name__ == '__main__':
+    import sys, os
+    import ConfigParser
+
+    cfgfile = os.path.join(os.environ['HOME'], '.lofasm', 'lofasm.cfg')
+    config = ConfigParser.RawConfigParser()
+    print "Reading configuration file: {}".format(cfgfile)
+    config.read(cfgfile)
+    cfg = {}
+    for k, v in config.items('lofasm_ctrl'):
+        cfg[k] = v
+
+    roach = cfg['roach_ip']
+    boffile = cfg['bofname']
+    acc_len = cfg['acc_len']
+    gain = cfg['gain']
+    ten_gbe_dest_ip = cfg['ten_gbe_dest_ip']
+try:
+    print('Connecting to server %s on port %i... '%(roach,katcp_port)),
+    fpga = corr.katcp_wrapper.FpgaClient(roach, katcp_port)
+    time.sleep(1)
+
+    if fpga.is_connected():
+        print 'ok\n'
+    else:
+        print 'ERROR connecting to server %s on port %i.\n'%(roach,katcp_port)
+        exit_fail()
+
+
+    print '------------------------'
+    print 'Programming FPGA: %s...'%boffile,
+    fpga.progdev(boffile)
+    print 'done'
+    time.sleep(2)
+
+    
+    print 'Configuring fft_shift...',
+    fpga.write_int('fft_shift',(2**32)-1)
+    print 'done'
+
+    print 'Configuring accumulation period...',
+    fpga.write_int('acc_len', acc_len)
+    print 'done'
+
+    print 'Resetting board, software triggering and resetting error counters...',
+    fpga.write_int('ctrl',0) 
+    fpga.write_int('ctrl',1<<17) #arm
+    fpga.write_int('ctrl',0) 
+    fpga.write_int('ctrl',1<<18) #software trigger
+    fpga.write_int('ctrl',0) 
+    fpga.write_int('ctrl',1<<18) #issue a second trigger
+    print 'done'
+
+    #EQ SCALING!
+    # writes only occur when the addr line changes value. 
+    # write blindly - don't bother checking if write was successful. Trust in TCP!
+    print 'Setting gains of all channels on all inputs to %i...'%opts.gain,
+    fpga.write_int('quant0_gain',gain) #write the same gain for all inputs, all channels
+    fpga.write_int('quant1_gain',gain) #write the same gain for all inputs, all channels
+    fpga.write_int('quant2_gain',gain) #write the same gain for all inputs, all channels
+    fpga.write_int('quant3_gain',gain) #write the same gain for all inputs, all channels
+    for chan in range(1024):
+        sys.stdout.flush()
+        for input in range(4):
+            fpga.blindwrite('quant%i_addr'%input,struct.pack('>I',chan))
+    print 'done'
+
+    #config for 10GbE interface
+    FABRIC_IP = '192.168.4.33'
+    FABRIC_IP = ipStr2Bin(FABRIC_IP)
+    FABRIC_PORT = 60000
+    DEST_PORT = 60001
+    DEST_IP = ten_gbe_dest_ip
+    DEST_IP = ipStr2Bin(DEST_IP)
+    tx_core_name = 'gbe0'       # simulink name
+    mac_base = (2<<40) + (2<<32)
+
+    print 'FPGA Registers: ', fpga.listdev()
+    time.sleep(.5)
+    print "Configuring 10GbE Packet Transmitter..."
+    fpga.write_int('tx_dest_ip',DEST_IP)
+    fpga.write_int('tx_dest_port',DEST_PORT)
+    time.sleep(0.1)
+    print "Starting 10GbE core..."
+    gbe0_link = fpga.read_int('gbe0_linkup')
+    if gbe0_link != 1:
+        print "ERROR: No cable is connected to CX-4 Port 0!"
+    else:
+        print "Cable verified connected to port 0."
+    print "core_name %s" % tx_core_name
+    print "mac_base: %i" % mac_base
+    print "fabric_ip: %i" % FABRIC_IP
+    print "mac_base+fabric_ip: %i" % ((int) (mac_base) + (int) (FABRIC_IP))
+    print "fabric_port: %i" % FABRIC_PORT
+    sys.stdout.flush()
+    fpga.tap_start('gbe0',tx_core_name,mac_base+FABRIC_IP,FABRIC_IP,FABRIC_PORT)
+
+    fpga.write_int('gbe_reset',1)
+    fpga.write_int('gbe_reset',0)
+
+    print "ok, all set up."
+
+except KeyboardInterrupt:
+    exit_clean()
+except:
+    exit_fail()
+
+exit_clean()
+

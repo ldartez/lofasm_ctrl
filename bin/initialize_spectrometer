@@ -45,7 +45,7 @@ if __name__ == '__main__':
     gain = cfg['gain']
     ten_gbe_dest_ip = cfg['ten_gbe_dest_ip']
 try:
-    print('Connecting to server %s on port %i... '%(roach,katcp_port)),
+    print('Connecting to server %s on port %i... '%(roach, katcp_port)),
     fpga = corr.katcp_wrapper.FpgaClient(roach, katcp_port)
     time.sleep(1)
 
